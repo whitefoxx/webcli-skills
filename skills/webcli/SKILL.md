@@ -47,29 +47,38 @@ after that.
 
 Read a page:
 
+`get_page_text` is dual-mode — pass `url` (opens, reads, closes) OR `tab_id`
+(reads an already-open tab in place, keeping its state):
+
 ```bash
-# One-shot open + read + close:
+# Fetch a URL (one-shot open + read + close):
 curl -s .../command -d '{"tool":"generic__get_page_text","args":{"url":"https://…","format":"markdown"}}'
-# Or read an already-open tab: generic__get_text_from_tab {tab_id}
+# Read an already-open tab (does not close it):
+curl -s .../command -d '{"tool":"generic__get_page_text","args":{"tab_id":123,"format":"markdown"}}'
 ```
 
 Operate a page (perceive → act → verify):
 
 ```bash
-open_url {url}              → {tabId}
-get_interactives {tab_id}   → {links,buttons,inputs,…} each with a `ref`
-click {tab_id, ref}         # or type_into {tab_id, ref, text} / select_option / press_key
-get_text_from_tab {tab_id}  # verify the result; screenshot {tab_id} for a visual check
-close_tab {tab_id}          # clean up background tabs you opened
+open_url {url}            → {tabId}
+get_interactives {tab_id} → {links,buttons,inputs,…} each with a `ref`
+click {tab_id, ref}       # locate by ref | selector | text; type_into / select_option / press_key
+get_page_text {tab_id}    # verify the result (cheap); screenshot {tab_id} only for visual checks
+close_tab {tab_id}        # clean up background tabs you opened
 ```
+
+**Prefer text over screenshots.** `get_page_text` is cheap and usually enough;
+`screenshot` returns a base64 image that costs many tokens — use it only for
+visual/layout/non-text tasks or to eyeball a result.
 
 ## 4. The tool surface (generic only)
 
-Navigation/content: `open_url`, `get_page_text`, `get_text_from_tab`, `get_html`,
+Navigation/content: `open_url`, `get_page_text` (url|tab_id), `get_html`,
 `get_dom_outline`, `screenshot`, `scroll_page`, `close_tab`. Tabs: `list_tabs`,
-`get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`,
-`click_by_text`, `type_into`, `select_option`, `press_key`, `hover`. Search/scan:
-`find_in_page`, `query_dom`, `find_in_dom`, `wait_for_selector`, `read_more`.
+`get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`
+(ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`.
+Search/scan: `find_in_page` (visible text), `query_dom` (CSS selector),
+`wait_for_selector`, `read_more`.
 
 That's the whole surface — there are **no** site-specific adapters and **no**
 `web_task`/agent tool. If a call returns "tool not found", it's not part of WebCLI
