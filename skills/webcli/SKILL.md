@@ -73,8 +73,9 @@ visual/layout/non-text tasks or to eyeball a result.
 
 ## 4. The tool surface (generic only)
 
-Navigation/content: `open_url`, `get_page_text` (url|tab_id), `get_html`,
-`get_dom_outline`, `screenshot`, `scroll_page`, `close_tab`. Tabs: `list_tabs`,
+Navigation/content: `open_url`, `get_page_text` (url|tab_id), `get_html`
+(url|tab_id), `get_dom_outline` (url|tab_id), `screenshot` (url|tab_id),
+`scroll_page`, `close_tab`. Tabs: `list_tabs`,
 `get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`
 (ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`.
 Search/scan: `find_in_page` (visible text), `query_dom` (CSS selector),
