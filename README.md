@@ -21,19 +21,19 @@ Or just hand this repo URL to your AI and let it read the skill.
 ## Run the bridge
 
 ```bash
-npx -y github:whitefoxx/webcli-skills        # daemon on 127.0.0.1:8788
+npx -y github:whitefoxx/webcli-skills        # daemon on 127.0.0.1:9376
 # custom port:  BRIDGE_PORT=8790 npx -y github:whitefoxx/webcli-skills
 ```
 
-The WebCLI extension dials the daemon automatically (default port **8788**, one
-above the full Web Agent bridge's 8787 so both can run at once).
+The WebCLI extension dials the daemon automatically (default port **9376**, a
+distinct port from the full Web Agent bridge's 8787 so both can run at once).
 
 ## Drive it
 
 ```bash
-curl -s http://127.0.0.1:8788/status                       # is the extension connected?
-curl -s http://127.0.0.1:8788/tools                        # the generic tool catalog (source of truth)
-curl -s http://127.0.0.1:8788/command \
+curl -s http://127.0.0.1:9376/status                       # is the extension connected?
+curl -s http://127.0.0.1:9376/tools                        # the generic tool catalog (source of truth)
+curl -s http://127.0.0.1:9376/command \
   -d '{"tool":"generic__open_url","args":{"url":"https://example.com"}}'
 ```
 

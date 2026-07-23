@@ -12,13 +12,13 @@
  * source of truth.
  *
  * HTTP (127.0.0.1 only): GET /ping /status /tools, POST /command {tool,args}.
- * Default port 8788 (override with BRIDGE_PORT) — one above the full Web Agent
- * bridge's 8787, so both can run at once.
+ * Default port 9376 (override with BRIDGE_PORT) — a distinct port from the full
+ * Web Agent bridge's 8787, so both can run at once.
  */
 import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
 
-const PORT = Number(process.env.BRIDGE_PORT || 8788);
+const PORT = Number(process.env.BRIDGE_PORT || 9376);
 const CALL_TIMEOUT_MS = Number(process.env.BRIDGE_CALL_TIMEOUT_MS) || 180_000;
 
 /** The single connected WebCLI extension socket. */

@@ -12,19 +12,19 @@ Everything runs on the user's machine, in their real Chrome session (no re-auth)
 
 ## 1. Start the bridge
 
-The WebCLI extension dials OUT to a local daemon (default port **8788**). Start it:
+The WebCLI extension dials OUT to a local daemon (default port **9376**). Start it:
 
 ```bash
-npx -y github:whitefoxx/webcli-skills            # runs the bridge on 8788
-# or a specific port:  BRIDGE_PORT=8788 npx -y github:whitefoxx/webcli-skills
+npx -y github:whitefoxx/webcli-skills            # runs the bridge on 9376
+# or a specific port:  BRIDGE_PORT=9376 npx -y github:whitefoxx/webcli-skills
 ```
 
 Then check it's connected (the extension auto-connects within ~1 min; the user may
 need to load/enable the **WebCLI** extension once):
 
 ```bash
-curl -s http://127.0.0.1:8788/status
-# → {"ok":true,"connected":true,"port":8788,"client":"webcli","tools":23}
+curl -s http://127.0.0.1:9376/status
+# → {"ok":true,"connected":true,"port":9376,"client":"webcli","tools":23}
 ```
 
 If `connected:false`, ask the user to open `chrome://extensions`, confirm **WebCLI**
@@ -33,12 +33,12 @@ after that.
 
 ## 2. Drive it (all over HTTP)
 
-- **List the exact tools + their args:** `curl -s http://127.0.0.1:8788/tools`
+- **List the exact tools + their args:** `curl -s http://127.0.0.1:9376/tools`
   (this is the source of truth — tool names are `generic__<name>`).
 - **Call a tool:**
 
   ```bash
-  curl -s http://127.0.0.1:8788/command \
+  curl -s http://127.0.0.1:9376/command \
     -d '{"tool":"generic__open_url","args":{"url":"https://example.com"}}'
   # → {"ok":true,"result":{"tabId":123,"url":"https://example.com","active":false}}
   ```
