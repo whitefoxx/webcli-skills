@@ -39,33 +39,48 @@ after that.
 
   ```bash
   curl -s http://127.0.0.1:9376/command \
-    -d '{"tool":"generic__open_url","args":{"url":"https://example.com"}}'
-  # → {"ok":true,"result":{"tabId":123,"url":"https://example.com","active":false}}
+    -d '{"tool":"generic__get_page_text","args":{"url":"https://example.com"}}'
+  # → {"ok":true,"result":{"title":"Example Domain","text":"…","tab_closed":true}}
   ```
 
 ## 3. The core loop
 
-Read a page:
-
-`get_page_text` is dual-mode — pass `url` (opens, reads, closes) OR `tab_id`
-(reads an already-open tab in place, keeping its state):
+**Reading a page is ONE call — don't `open_url` first.** `get_page_text` opens
+the URL itself, waits for it to settle, reads it and disposes of the tab:
 
 ```bash
-# Fetch a URL (one-shot open + read + close):
+# One-shot fetch (open + read + close) — the WebFetch equivalent:
 curl -s .../command -d '{"tool":"generic__get_page_text","args":{"url":"https://…","format":"markdown"}}'
-# Read an already-open tab (does not close it):
+# → {"ok":true,"result":{"markdown":"…","tab_closed":true}}   ← no tab id: the tab is gone
+
+# Read AND keep the page, for when you may act on it next (one call, not two):
+curl -s .../command -d '{"tool":"generic__get_page_text","args":{"url":"https://…","keep_open":true}}'
+# → {"ok":true,"result":{"text":"…","tabId":123,"created_tab":true}}
+
+# Read an already-open tab in place (keeps its scroll / SPA route / popup state):
 curl -s .../command -d '{"tool":"generic__get_page_text","args":{"tab_id":123,"format":"markdown"}}'
 ```
+
+`get_html` / `get_dom_outline` / `screenshot` take `url` the same way (one-shot;
+they close their tab too). A result with `"tab_closed": true` has **no tab left**
+— there is no id to follow up on.
+
+Use `open_url` on its own only when you want the tab **without** its text: going
+straight to interaction, or putting a page in front of the user (`active:true`).
 
 Operate a page (perceive → act → verify):
 
 ```bash
-open_url {url}            → {tabId}
+get_page_text {url, keep_open:true} → {text, tabId}   # or open_url {url} → {tabId}
 get_interactives {tab_id} → {links,buttons,inputs,…} each with a `ref`
 click {tab_id, ref}       # locate by ref | selector | text; type_into / select_option / press_key
+scroll_page {tab_id}      # lazy-loading feeds; `ref` scrolls an inner container
 get_page_text {tab_id}    # verify the result (cheap); screenshot {tab_id} only for visual checks
 close_tab {tab_id}        # clean up background tabs you opened
 ```
+
+**Tabs are yours.** WebCLI never reaps them (there is no agent run to end), so a
+`tabId` stays valid until you `close_tab` it or the user closes the tab.
 
 **Prefer text over screenshots.** `get_page_text` is cheap and usually enough;
 `screenshot` returns a base64 image that costs many tokens — use it only for
@@ -73,8 +88,8 @@ visual/layout/non-text tasks or to eyeball a result.
 
 ## 4. The tool surface (generic only)
 
-Navigation/content: `open_url`, `get_page_text` (url|tab_id), `get_html`
-(url|tab_id), `get_dom_outline` (url|tab_id), `screenshot` (url|tab_id),
+Navigation/content: `open_url`, `get_page_text` (url [+`keep_open`] | tab_id),
+`get_html` (url|tab_id), `get_dom_outline` (url|tab_id), `screenshot` (url|tab_id),
 `scroll_page`, `close_tab`. Tabs: `list_tabs`,
 `get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`
 (ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`.
