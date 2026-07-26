@@ -3,7 +3,7 @@
 Bridge daemon + agent skill for **WebCLI** — a headless, agent-free Chrome
 extension that exposes your logged-in browser's **generic browser tools** (open
 pages, read/extract, click/type/scroll, screenshot, manage tabs) to external AI
-agents (Claude Code, Codex, browser-md). No site adapters, no in-browser LLM —
+agents (Claude Code, Codex, localmd). No site adapters, no in-browser LLM —
 just the primitives, driven over plain HTTP.
 
 It's the "pure provider" sibling of the full [Web Agent](https://github.com/whitefoxx/web-agent-skills)
@@ -41,11 +41,11 @@ Full driving guide: [`skills/webcli/SKILL.md`](./skills/webcli/SKILL.md).
 
 ## HTTP API (binds 127.0.0.1 only)
 
-| Method + path | Result |
-| --- | --- |
-| `GET /ping` | `{ok:true}` |
-| `GET /status` | `{ok, connected, port, client, tools}` |
-| `GET /tools` | `{ok, tools:[…]}` — generic tools in OpenAI-tool shape |
+| Method + path   | Result                                                      |
+| --------------- | ----------------------------------------------------------- |
+| `GET /ping`     | `{ok:true}`                                                 |
+| `GET /status`   | `{ok, connected, port, client, tools}`                      |
+| `GET /tools`    | `{ok, tools:[…]}` — generic tools in OpenAI-tool shape      |
 | `POST /command` | body `{tool, args}` → `{ok, result}` or `{ok:false, error}` |
 
 ## Layout
