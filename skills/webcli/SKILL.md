@@ -45,11 +45,18 @@ after that.
 
 ## 3. The core loop
 
-**Reading a page is ONE call — don't `open_url` first.** `get_page_text` opens
-the URL itself, waits for it to settle, reads it and disposes of the tab:
+**Reading a page is ONE call — don't `open_url` first.** Two one-call readers;
+pick by whether the page needs a browser to render:
 
 ```bash
-# One-shot fetch (open + read + close) — the WebFetch equivalent:
+# CHEAPEST: no tab at all. Fetches with the user's cookies, returns Markdown.
+# Use this FIRST for server-rendered pages: articles, docs, blogs, READMEs, news.
+curl -s .../command -d '{"tool":"generic__fetch_url","args":{"url":"https://…","format":"markdown"}}'
+# → {"ok":true,"result":{"markdown":"# Title…","title":"…","with_cookies":true,"status":200}}
+#   with_cookies:false fetches signed-out; selector:"#main" scopes the conversion;
+#   a non-HTML response comes back as text with a `note` saying so.
+
+# Empty or missing the content? The page is JS-rendered — render it in a real tab:
 curl -s .../command -d '{"tool":"generic__get_page_text","args":{"url":"https://…","format":"markdown"}}'
 # → {"ok":true,"result":{"markdown":"…","tab_closed":true}}   ← no tab id: the tab is gone
 
@@ -88,13 +95,17 @@ visual/layout/non-text tasks or to eyeball a result.
 
 ## 4. The tool surface (generic only)
 
+Read without a tab: `fetch_url` (raw | json | `format:"markdown"`, `with_cookies`).
 Navigation/content: `open_url`, `get_page_text` (url [+`keep_open`] | tab_id),
-`get_html` (url|tab_id), `get_dom_outline` (url|tab_id), `screenshot` (url|tab_id),
-`scroll_page`, `close_tab`. Tabs: `list_tabs`,
+`get_html` (url|tab_id), `get_dom_outline` (url|tab_id), `list_links` (url|tab_id),
+`screenshot` (url|tab_id), `scroll_page`, `close_tab`. Tabs: `list_tabs`,
 `get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`
-(ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`.
-Search/scan: `find_in_page` (visible text), `query_dom` (CSS selector),
-`wait_for_selector`, `read_more`.
+(ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`,
+`drag_and_drop`, `file_upload`, `handle_dialog`. Search/scan: `web_search`,
+`find_in_page` (visible text), `query_dom` (CSS selector), `wait_for_selector`.
+
+25 tools in total (`read_more` is NOT one of them — it belongs to the full
+extension's agent loop). `GET /tools` is always the authority.
 
 That's the whole surface — there are **no** site-specific adapters and **no**
 `web_task`/agent tool. If a call returns "tool not found", it's not part of WebCLI
