@@ -1,6 +1,6 @@
 ---
 name: webcli
-description: Use to drive the user's real, logged-in Chrome through the WebCLI extension — a headless, agent-free browser bridge. Open pages, read/extract content (get_page_text / get_html / get_dom_outline), see and operate the page (get_interactives → click / type_into / select_option / press_key / scroll_page), take screenshots, and manage tabs. GENERIC browser tools only (no site adapters, no in-browser LLM). Talk to it over plain HTTP (curl) — no MCP setup. Reach for this on any "use my browser", "read this page while I'm logged in", "scrape/automate this page", or "click/fill this form for me" request.
+description: Use to drive the user's real, logged-in Chrome through the WebCLI extension — a headless, agent-free browser bridge. Open pages, read/extract content (get_page_text / get_html / get_dom_outline), see and operate the page (get_interactives → click / type_into / fill_form / select_option / press_key / scroll_page), take screenshots, and manage tabs. GENERIC browser tools only (no site adapters, no in-browser LLM). Talk to it over plain HTTP (curl) — no MCP setup. Reach for this on any "use my browser", "read this page while I'm logged in", "scrape/automate this page", or "click/fill this form for me" request.
 ---
 
 # WebCLI
@@ -24,7 +24,7 @@ need to load/enable the **WebCLI** extension once):
 
 ```bash
 curl -s http://127.0.0.1:9376/status
-# → {"ok":true,"connected":true,"port":9376,"client":"webcli","tools":23}
+# → {"ok":true,"connected":true,"port":9376,"client":"webcli","tools":28}
 ```
 
 If `connected:false`, ask the user to open `chrome://extensions`, confirm **WebCLI**
@@ -81,9 +81,23 @@ Operate a page (perceive → act → verify):
 get_page_text {url, keep_open:true} → {text, tabId}   # or open_url {url} → {tabId}
 get_interactives {tab_id} → {links,buttons,inputs,…} each with a `ref`
 click {tab_id, ref}       # locate by ref | selector | text; type_into / select_option / press_key
+fill_form {tab_id, fields:[{ref,value},…]}   # MORE THAN ONE box → one call, not N
 scroll_page {tab_id}      # lazy-loading feeds; `ref` scrolls an inner container
+wait_for_selector {tab_id, text:"Order confirmed"}   # or selector: — wait, don't sleep
 get_page_text {tab_id}    # verify the result (cheap); screenshot {tab_id} only for visual checks
 close_tab {tab_id}        # clean up background tabs you opened
+```
+
+**Filling a form is one call.** `fill_form` sets every field in a single DOM pass
+and handles the kinds a real form has — text / textarea / rich-text, `<select>`
+(match the option's value **or** its visible label), and checkbox/radio (`"true"` /
+`"false"`). Results come back per field, so one stale ref doesn't lose the rest:
+
+```bash
+curl -s .../command -d '{"tool":"generic__fill_form","args":{"tab_id":123,
+  "fields":"[{\"ref\":\"r3\",\"value\":\"alice@example.com\"},{\"selector\":\"#pw\",\"value\":\"hunter2\"},{\"ref\":\"r9\",\"value\":\"true\"}]",
+  "submit":true}}'
+# → {"ok":true,"result":{"filled":3,"total":3,"results":[…],"url_changed":true}}
 ```
 
 **Tabs are yours.** WebCLI never reaps them (there is no agent run to end), so a
@@ -91,21 +105,36 @@ close_tab {tab_id}        # clean up background tabs you opened
 
 **Prefer text over screenshots.** `get_page_text` is cheap and usually enough;
 `screenshot` returns a base64 image that costs many tokens — use it only for
-visual/layout/non-text tasks or to eyeball a result.
+visual/layout/non-text tasks or to eyeball a result. **When you do take one, size
+it**: `{"format":"jpeg","max_width":1024}` typically cuts the bytes several-fold
+and still answers any layout or "did that work?" question. Keep the default png
+only when you must read fine print — a captcha, chart labels, a dense table.
 
 ## 4. The tool surface (generic only)
 
 Read without a tab: `fetch_url` (raw | json | `format:"markdown"`, `with_cookies`).
 Navigation/content: `open_url`, `get_page_text` (url [+`keep_open`] | tab_id),
 `get_html` (url|tab_id), `get_dom_outline` (url|tab_id), `list_links` (url|tab_id),
-`screenshot` (url|tab_id), `scroll_page`, `close_tab`. Tabs: `list_tabs`,
-`get_active_tab`, `manage_tabs`. Perceive+interact: `get_interactives`, `click`
-(ref|selector|text), `type_into`, `select_option`, `press_key`, `hover`,
+`screenshot` (url|tab_id, `format`/`quality`/`max_width`), `scroll_page`,
+`close_tab`. Tabs: `list_tabs`, `get_active_tab`, `manage_tabs`.
+Perceive+interact: `get_interactives`, `click` (ref|selector|text), `type_into`,
+`fill_form` (many fields at once), `select_option`, `press_key`, `hover`,
 `drag_and_drop`, `file_upload`, `handle_dialog`. Search/scan: `web_search`,
-`find_in_page` (visible text), `query_dom` (CSS selector), `wait_for_selector`.
+`find_in_page` (visible text), `query_dom` (CSS selector), `wait_for_selector`
+(`selector` or `text`). Page-declared tools: `list_webmcp_tools`,
+`call_webmcp_tool`.
 
-25 tools in total (`read_more` is NOT one of them — it belongs to the full
+28 tools in total (`read_more` is NOT one of them — it belongs to the full
 extension's agent loop). `GET /tools` is always the authority.
+
+**Page-declared tools (WebMCP).** A few sites now register their own
+agent-callable tools via `navigator.modelContext`. On a page you are about to
+automate it costs one call to check — `list_webmcp_tools {tab_id}` — and when a
+site does offer them, calling one beats driving its UI, because you are using the
+interface it meant for you rather than its buttons. Most pages declare nothing;
+that is the expected answer, not an error, and you just fall back to
+`get_interactives` + `click`. `call_webmcp_tool {tab_id, name, input}` performs a
+real action on the site — treat it as seriously as clicking the button it replaces.
 
 That's the whole surface — there are **no** site-specific adapters and **no**
 `web_task`/agent tool. If a call returns "tool not found", it's not part of WebCLI
