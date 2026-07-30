@@ -145,5 +145,7 @@ That's the whole surface — there are **no** site-specific adapters and **no**
 - Writes/interactions (click/type/submit) act on the user's real session — be
   deliberate; don't batch destructive actions.
 - Tabs you open in the background pile up; close them when done.
-- The extension ID (for `chrome.runtime.connect` from a web app like localmd)
-  is shown in the WebCLI toolbar popup, with a copy button.
+- Web apps can also call the tools directly from their own pages (no bridge, no
+  extension id) — but only from origins the user added under **Web app access**
+  in the WebCLI toolbar popup. See "Web app integration" in the repo README for
+  the postMessage protocol.

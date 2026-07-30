@@ -48,6 +48,39 @@ Full driving guide: [`skills/webcli/SKILL.md`](./skills/webcli/SKILL.md).
 | `GET /tools`    | `{ok, tools:[…]}` — generic tools in OpenAI-tool shape      |
 | `POST /command` | body `{tool, args}` → `{ok, result}` or `{ok:false, error}` |
 
+## Web app integration (no bridge, no extension id)
+
+A web app can call the same tools directly from its own pages — **if, and only
+if, the user added its origin** under **Web app access** in the WebCLI toolbar
+popup (the default list is empty; there are no built-in origins). WebCLI then
+injects a tiny relay into that origin's pages, and the page talks to it over
+`window.postMessage`:
+
+```js
+// 1. Detect the relay via the DOM marker — synchronous, race-free:
+//    document.documentElement.dataset.webcliRelay  // the extension id, set at document_start
+//    (a `ready` frame {webcli:'mcp',dir:'to-page',ext,ready:true} is ALSO posted,
+//    but in practice it can dispatch before your listener exists — treat it as a
+//    bonus, not the detection mechanism)
+// 2. Send JSON-RPC (MCP): initialize / tools/list / tools/call —
+window.postMessage(
+  { webcli: 'mcp', dir: 'to-ext', ext, // echo `ext` from the ready frame
+    msg: { jsonrpc: '2.0', id: 1, method: 'tools/call',
+           params: { name: 'generic__list_tabs', arguments: {} } } },
+  window.location.origin,
+);
+// 3. Responses arrive the same way:
+//    { webcli:'mcp', dir:'to-page', ext, msg:{ jsonrpc:'2.0', id:1, result:{…} } }
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (d?.webcli === 'mcp' && d.dir === 'to-page' && d.msg?.id === 1) console.log(d.msg);
+});
+```
+
+Always echo `ext` (from the DOM marker or any received frame): a user can have
+two WebCLI installs (store + dev), and an untargeted frame would be executed by
+both. Your first frame may omit `ext` and learn it from the reply envelope.
+
 ## Layout
 
 - `server.mjs` — the bridge daemon (`npx`/`node` entry, `webcli-bridge` bin).
