@@ -3,8 +3,8 @@
 Bridge daemon + agent skill for **WebCLI** — a headless, agent-free Chrome
 extension that exposes your logged-in browser's **generic browser tools** (open
 pages, read/extract, click/type/scroll, screenshot, manage tabs) to external AI
-agents (Claude Code, Codex, localmd). No site adapters, no in-browser LLM —
-just the primitives, driven over plain HTTP.
+agents (Claude Code, Codex, …). No site adapters, no in-browser LLM — just the
+primitives, driven over plain HTTP.
 
 It's the "pure provider" sibling of the full [Web Agent](https://github.com/whitefoxx/web-agent-skills)
 extension: same transport, generic tools only.
@@ -48,38 +48,11 @@ Full driving guide: [`skills/webcli/SKILL.md`](./skills/webcli/SKILL.md).
 | `GET /tools`    | `{ok, tools:[…]}` — generic tools in OpenAI-tool shape      |
 | `POST /command` | body `{tool, args}` → `{ok, result}` or `{ok:false, error}` |
 
-## Web app integration (no bridge, no extension id)
-
-A web app can call the same tools directly from its own pages — **if, and only
-if, the user added its origin** under **Web app access** in the WebCLI toolbar
-popup (the default list is empty; there are no built-in origins). WebCLI then
-injects a tiny relay into that origin's pages, and the page talks to it over
-`window.postMessage`:
-
-```js
-// 1. Detect the relay via the DOM marker — synchronous, race-free:
-//    document.documentElement.dataset.webcliRelay  // the extension id, set at document_start
-//    (a `ready` frame {webcli:'mcp',dir:'to-page',ext,ready:true} is ALSO posted,
-//    but in practice it can dispatch before your listener exists — treat it as a
-//    bonus, not the detection mechanism)
-// 2. Send JSON-RPC (MCP): initialize / tools/list / tools/call —
-window.postMessage(
-  { webcli: 'mcp', dir: 'to-ext', ext, // echo `ext` from the ready frame
-    msg: { jsonrpc: '2.0', id: 1, method: 'tools/call',
-           params: { name: 'generic__list_tabs', arguments: {} } } },
-  window.location.origin,
-);
-// 3. Responses arrive the same way:
-//    { webcli:'mcp', dir:'to-page', ext, msg:{ jsonrpc:'2.0', id:1, result:{…} } }
-window.addEventListener('message', (e) => {
-  const d = e.data;
-  if (d?.webcli === 'mcp' && d.dir === 'to-page' && d.msg?.id === 1) console.log(d.msg);
-});
-```
-
-Always echo `ext` (from the DOM marker or any received frame): a user can have
-two WebCLI installs (store + dev), and an untargeted frame would be executed by
-both. Your first frame may omit `ext` and learn it from the reply envelope.
+That daemon is the whole surface. An earlier revision of this README documented a
+second path — a postMessage relay letting a **web page** call the tools from an
+origin the user allowlisted. That path never reached a published build and was
+removed in WebCLI 0.3.0: WebCLI is the bridge for CLI agents, and browser-page
+access moved to a dedicated companion extension.
 
 ## Layout
 

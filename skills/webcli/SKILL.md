@@ -145,7 +145,6 @@ That's the whole surface — there are **no** site-specific adapters and **no**
 - Writes/interactions (click/type/submit) act on the user's real session — be
   deliberate; don't batch destructive actions.
 - Tabs you open in the background pile up; close them when done.
-- Web apps can also call the tools directly from their own pages (no bridge, no
-  extension id) — but only from origins the user added under **Web app access**
-  in the WebCLI toolbar popup. See "Web app integration" in the repo README for
-  the postMessage protocol.
+- The daemon is the only way in. WebCLI does not expose the tools to web pages
+  (a relay path existed in unreleased 0.2.0 builds and was removed in 0.3.0), so
+  nothing reaches these tools except an agent driving `POST /command`.
