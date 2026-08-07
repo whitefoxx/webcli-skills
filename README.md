@@ -48,11 +48,15 @@ Full driving guide: [`skills/webcli/SKILL.md`](./skills/webcli/SKILL.md).
 | `GET /tools`    | `{ok, tools:[…]}` — generic tools in OpenAI-tool shape      |
 | `POST /command` | body `{tool, args}` → `{ok, result}` or `{ok:false, error}` |
 
-That daemon is the whole surface. An earlier revision of this README documented a
-second path — a postMessage relay letting a **web page** call the tools from an
-origin the user allowlisted. That path never reached a published build and was
-removed in WebCLI 0.3.0: WebCLI is the bridge for CLI agents, and browser-page
-access moved to a dedicated companion extension.
+That daemon is the whole surface **from 0.3.0 on**. 0.2.0 also shipped a second
+path — a postMessage relay letting a **web page** call the tools from an origin
+the user allowlisted — and 0.3.0 removes it: WebCLI is the bridge for CLI
+agents, and browser-page access moved to a dedicated companion extension built
+for the one web app that used it.
+
+If you are on 0.2.0 and relying on that path, it stops working when you update.
+Your configured origin list is cleared on update, so rolling back does not
+restore it.
 
 ## Layout
 

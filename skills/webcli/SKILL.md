@@ -145,6 +145,6 @@ That's the whole surface — there are **no** site-specific adapters and **no**
 - Writes/interactions (click/type/submit) act on the user's real session — be
   deliberate; don't batch destructive actions.
 - Tabs you open in the background pile up; close them when done.
-- The daemon is the only way in. WebCLI does not expose the tools to web pages
-  (a relay path existed in unreleased 0.2.0 builds and was removed in 0.3.0), so
-  nothing reaches these tools except an agent driving `POST /command`.
+- From 0.3.0 the daemon is the only way in: WebCLI no longer exposes the tools
+  to web pages (0.2.0 shipped a relay for that; 0.3.0 removed it), so nothing
+  reaches these tools except an agent driving `POST /command`.
